@@ -7,7 +7,35 @@ export function ball(parent,color,x,y,z,sx,sy=sx,sz=sx){const m=mesh(new THREE.S
 export function cylinder(parent,color,x,y,z,top,bottom,height,segments=24){return mesh(new THREE.CylinderGeometry(top,bottom,height,segments),color,parent,x,y,z)}
 export function leaf(parent,x,y,z,rot=0,size=1,color='#77a44a'){const m=ball(parent,color,x,y,z,.17*size,.055*size,.43*size);m.rotation.set(-.3,rot,.1);return m}
 export function eyes(parent,y,z,spread=.19,size=.067){for(const side of [-1,1]){ball(parent,'#283d32',side*spread,y,z,size,size*1.17,size*.6);ball(parent,'#ffffff',side*spread-.014,y+.024,z+.034,size*.3);ball(parent,'#e7a69a',side*(spread+.13),y-.14,z-.025,.082,.043,.025)}}
-export function towerModel(type,level=1){const root=new THREE.Group();const base=new THREE.Group();root.add(base);
+function fusionModule(type,level){
+ const g=new THREE.Group(),color=TOWERS[type].color,metal='#665532';
+ cylinder(g,metal,0,0,0,.22,.3,.22,12);
+ if(type==='flame'){
+  cylinder(g,'#cf5730',0,.22,0,.22,.26,.45,12);
+  for(const side of [-1,0,1]){const flame=mesh(new THREE.ConeGeometry(.16,.6+level*.13,5),side?'#ff813e':'#fff199',g,side*.16,.7,0);flame.rotation.z=-side*.25}
+ }else if(type==='lightning'){
+  cylinder(g,metal,0,.3,0,.1,.13,.65,10);
+  for(const side of [-1,1]){const fork=mesh(new THREE.BoxGeometry(.09,.6,.1),'#b39dff',g,side*.2,.65,0);fork.rotation.z=-side*.35;ball(g,'#fff5bd',side*.3,.97,0,.12)}
+ }else if(type==='frost'){
+  for(const side of [-1,0,1]){const shard=mesh(new THREE.OctahedronGeometry(.25),'#8ce8ef',g,side*.2,.45+(.2-Math.abs(side)*.2),0);shard.scale.set(.7,2+level*.15,.7);shard.rotation.z=-side*.35}
+ }else if(type==='mushroom'){
+  cylinder(g,'#ffe5b0',0,.28,0,.16,.22,.6);
+  const cap=mesh(new THREE.SphereGeometry(.5,20,12,0,Math.PI*2,0,Math.PI/2),color,g,0,.48,0);cap.scale.y=.8;
+  for(const side of [-1,1])ball(g,'#fff1d2',side*.2,.79,.12,.1,.035,.1);
+ }else if(type==='venom'){
+  for(const side of [-1,1]){const jaw=ball(g,color,side*.2,.5,0,.24,.4,.3);jaw.rotation.z=-side*.4;
+   for(let j=0;j<3;j++)mesh(new THREE.ConeGeometry(.06,.18,4),'#fff2cc',g,side*.07,.35+j*.16,.22).rotation.z=side*Math.PI/2}
+ }else if(type==='nova'){
+  const core=mesh(new THREE.IcosahedronGeometry(.25),'#efb4ff',g,0,.55,0);
+  for(let j=0;j<2;j++){const ring=mesh(new THREE.TorusGeometry(.43,.045,8,28),j?'#fff2fb':color,g,0,.55,0);ring.rotation.set(.6+j,0,j*.8)}
+ }else{
+  const barrel=cylinder(g,color,0,.38,.2,.2,.25,.7);barrel.rotation.x=Math.PI/2;
+  const mouth=mesh(new THREE.TorusGeometry(.2,.07,8,24),'#c0e681',g,0,.38,.56);
+  ball(g,'#405b31',0,.38,.57,.15,.15,.018);
+ }
+ g.scale.setScalar(.8+level*.1);return g;
+}
+export function towerModel(type,level=1,fusion=null){const root=new THREE.Group();const base=new THREE.Group();root.add(base);
  cylinder(base,'#d6bb91',0,.07,0,.66,.72,.15);cylinder(base,'#edb589',0,.28,0,.52,.39,.42);cylinder(base,'#f5c79a',0,.49,0,.59,.59,.15);cylinder(base,'#65583d',0,.58,0,.49,.49,.07);
  for(let i=0;i<7;i++)leaf(base,Math.sin(i)*.33,.63,Math.cos(i)*.33,i,.9);
  const head=new THREE.Group();root.add(head);root.userData.head=head;
@@ -19,6 +47,18 @@ export function towerModel(type,level=1){const root=new THREE.Group();const base
  for(const side of [-1,1]){const barrel=cylinder(head,side<0?'#d87e32':gold,side*.34,1.88,.85,.3,.42,1.35,24);barrel.rotation.x=Math.PI/2;const rim=mesh(new THREE.TorusGeometry(.31,.105,12,28),glow,head,side*.34,1.88,1.52);ball(head,'#4b3c26',side*.34,1.88,1.535,.235,.235,.025)}
  eyes(head,2.18,.7,.35,.09);for(let i=0;i<6;i++){const a=i*Math.PI/3;const ray=mesh(new THREE.OctahedronGeometry(.22),glow,head,Math.sin(a)*.8,2.72,Math.cos(a)*.6);ray.scale.set(.65,1.8,.65)}
  const halo=mesh(new THREE.TorusGeometry(1.08,.065,10,48),glow,head,0,2.25,0);halo.rotation.x=Math.PI/2;root.userData.halo=halo;root.scale.setScalar(1.55);
+ root.userData.elementOrbits=[];root.userData.fusionModules=[];
+ for(const [i,part] of (fusion?.ingredients||[]).entries()){
+  const orbit=new THREE.Group();head.add(orbit);orbit.position.y=1.25+i*.55;
+  const color=TOWERS[part.type].color;
+  const module=fusionModule(part.type,level);
+  const angle=i*Math.PI*2/3+Math.PI/3;module.position.set(Math.sin(angle)*1.05,1.65,Math.cos(angle)*1.05);module.rotation.y=angle;head.add(module);root.userData.fusionModules.push(module);
+  const plate=mesh(new THREE.BoxGeometry(.48,.22+level*.07,.28),color,base,Math.sin(angle)*.9,.85,Math.cos(angle)*.9);plate.rotation.y=angle;
+  const ring=mesh(new THREE.TorusGeometry(1.05+i*.05,.035+level*.012,8,40),color,orbit);ring.rotation.x=Math.PI/2;
+  for(let j=0;j<level+1;j++){const a=j*Math.PI*2/(level+1)+i;const gem=mesh(new THREE.OctahedronGeometry(.13+level*.025),color,orbit,Math.sin(a)*1.1,0,Math.cos(a)*1.1);gem.scale.y=part.type==='flame'?2:1;gem.material=gem.material.clone();gem.material.emissive.set(color);gem.material.emissiveIntensity=.6}
+  root.userData.elementOrbits.push(orbit);
+ }
+
  }else if(type==='pea'){
  cylinder(head,'#6c9b48',0,.87,0,.11,.13,.66);leaf(head,.23,.86,0,1.2,1.1);leaf(head,-.21,.94,0,-1.3,.9);
  ball(head,'#97bb61',0,1.48,0,.54,.5,.52);ball(head,'#a8c976',-.12,1.67,-.14,.29,.21,.3);
