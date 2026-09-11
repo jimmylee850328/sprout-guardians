@@ -1,4 +1,5 @@
 import './style.css';
+import './immersive.css';
 import { createIcons, Sprout, LayoutGrid, Map, BookOpen, Trophy, Settings2, CircleHelp, Volume2, VolumeX, Heart, Coins, Flag, Leaf, Box, Layers2, MousePointer2, RotateCcw, Plus, Minus, Pause, Play, FastForward, Swords, Crosshair, Zap, Snowflake, Sparkles, ChevronRight, Check, X, ShieldCheck, Cloud, Keyboard, Target, ArrowUp, CircleCheck, Sun } from 'lucide';
 import { recipeLabel } from './fusion.js';
 import { Game } from './game.js';
@@ -62,7 +63,7 @@ function update(g){$('#completed-count').textContent=`已守護 ${saved.stars.fi
  $('#instruction').textContent=g.selectedType?`點擊圓形空地種下${TOWERS[g.selectedType].name} · Esc 取消`:g.selectedTower?.type==='super'?'太陽核巨砲佔據三個位置，正在全速轟擊！':g.selectedTower?'可將這座砲台選為融合祭品':g.active?'守衛出擊！你仍然可以種植或升級':'選擇守衛，點擊空地開始種植';
  const detail=$('#tower-detail'),t=g.selectedTower;detail.hidden=!t;if(t){const stats=g.towerStats(t),superTower=t.type==='super',cost=g.upgradeCost(t),marked=g.fusionSelected.includes(t);detail.classList.toggle('super-detail',superTower);detail.innerHTML=`<button class="detail-close" id="detail-close" aria-label="關閉守衛資訊">×</button><strong>${superTower?'✦ ':''}${TOWERS[t.type].name}${' · Lv.'+t.level}</strong><p>傷害 ${Number(stats.damage.toFixed(1))}　射程 ${stats.range.toFixed(1)}　${stats.interval.toFixed(2)} 秒／發${superTower?'<br>'+recipeLabel(t.fusion)+'<br>祭品投入 '+t.fusion.investment+' 幣 · 佔據 3 個位置':''}</p><div class="detail-actions">${superTower?`<button id="upgrade" ${t.level>=3||t.fusing>0?'disabled':''}>${t.level>=3?'已達最高等級':`融合升級 · ${cost} 幣`}</button>`:`<button id="upgrade" ${t.level>=3?'disabled':''}>${t.level>=3?'已達最高等級':`升級 · ${cost} 幣`}</button><button class="sell" id="sell">回收 · ${Math.floor(t.spent*.65)} 幣</button><button class="fusion ${marked?'marked':''}" id="fusion">${marked?'取消祭品':`融合祭品 ${g.fusionSelected.length} / 3`}</button>`}</div>`;$('#upgrade').onclick=()=>g.upgrade();if(!superTower){$('#sell').onclick=()=>g.sell();if($('#fusion'))$('#fusion').onclick=()=>g.toggleFusion()}$('#detail-close').onclick=()=>g.select(null)}else detail.classList.remove('super-detail');
  refreshIcons();}
-function openModal(content){lastFocused=document.activeElement;if(game){modalWasPaused=game.paused;if(!game.paused&&!game.finished){game.paused=true;game.emit()}}$('#modal').innerHTML=`<button class="icon-btn modal-close" id="close-modal" aria-label="關閉視窗">${icon('x')}</button>${content}`;overlay.hidden=false;$('#close-modal').onclick=closeModal;refreshIcons();$('#close-modal').focus()}
+function openModal(content){closeChapters();lastFocused=document.activeElement;if(game){modalWasPaused=game.paused;if(!game.paused&&!game.finished){game.paused=true;game.emit()}}$('#modal').innerHTML=`<button class="icon-btn modal-close" id="close-modal" aria-label="關閉視窗">${icon('x')}</button>${content}`;overlay.hidden=false;$('#close-modal').onclick=closeModal;refreshIcons();$('#close-modal').focus()}
 function closeModal(){overlay.hidden=true;if(game&&!game.finished){game.paused=modalWasPaused;game.emit()}lastFocused?.focus()}
 function updateSound(){saved.muted=!sound.enabled;$('#sound').innerHTML=icon(sound.enabled?'volume-2':'volume-x');$('#sound').setAttribute('aria-label',sound.enabled?'關閉音效':'開啟音效');persist();refreshIcons()}
 function help(){openModal(`<div class="modal-mark">${icon('sprout')}</div><p class="eyebrow">WELCOME, GARDEN KEEPER</p><h2 id="modal-title">小小花園，需要你。</h2><p>搗蛋小怪想溜進花園！種下可愛的守衛，一起保護終點的小屋。</p><div class="modal-row">${icon('mouse-pointer-2')}<span>選擇右側守衛，再點擊地圖上的圓形種植台。<br>已有兩位守衛免費加入你的隊伍。</span></div><div class="modal-row">${icon('sparkles')}<span>每章皆可融合：依序點選任意三座砲台，按下「融合祭品」。<br>第三座確認後會繼承三塔的元素與升級能力，佔三個位置，合成後可再升至 Lv.3。</span></div><div class="modal-row">${icon('arrow-up')}<span>豌豆攻速快、蘑菇打範圍、冰晶花會讓怪物明顯結冰緩速。</span></div><div class="modal-row">${icon('keyboard')}<span>1–7 選擇守衛 · Enter 開始波次<br>空白鍵暫停 · Esc 取消 · 拖曳旋轉 · 滾輪縮放</span></div><button class="primary" id="help-go">一起守護花園</button>`);$('#help-go').onclick=closeModal}
@@ -78,9 +79,70 @@ $('#sound').onclick=()=>{sound.toggle();updateSound();toast(sound.enabled?'音�
 $('#nav-collection').onclick=()=>{openModal(`<div class="modal-mark">${icon('book-open')}</div><p class="eyebrow">MEET YOUR LITTLE GUARDIANS</p><h2 id="modal-title">花園守衛圖鑑</h2><p>七種守衛可升級至 Lv.3，全章節皆可三塔融合。通關解鎖會永久保存在這個瀏覽器。</p><div class="collection-grid">${Object.entries(TOWERS).filter(([,t])=>!t.fusionOnly).map(([k,t])=>`<div class="collection-item"><img src="${previews[k]||''}" alt="${t.name}"><strong>${t.name}</strong><small>${saved.unlockedTowers.includes(k)?'已永久解鎖':'第 '+t.unlock+' 章解鎖'}</small></div>`).join('')}</div>${Object.values(TOWERS).map(t=>`<p><b>${t.name}</b> · ${t.description}</p>`).join('')}`)};
 $('#nav-achievements').onclick=()=>openModal(`<div class="modal-mark">${icon('trophy')}</div><p class="eyebrow">YOUR GARDEN STORY</p><h2 id="modal-title">每一顆星，都是守護。</h2><p>生命剩餘 18 點以上可獲得 3 星，10 點以上獲得 2 星。你的最佳紀錄會保存在這台裝置。</p>${LEVELS.map((l,i)=>`<div class="settings-row"><span>0${i+1} · ${l.name}</span><span style="color:#c5a55c;letter-spacing:4px">${'★'.repeat(saved.stars[i]||0)}${'☆'.repeat(3-(saved.stars[i]||0))}</span></div>`).join('')}`);
 $('#settings').onclick=()=>{openModal(`<div class="modal-mark">${icon('settings-2')}</div><h2 id="modal-title">讓花園剛剛好。</h2><div class="settings-row"><span>遊戲音效</span><button class="setting-toggle" id="settings-sound">${sound.enabled?'已開啟':'已關閉'}</button></div><div class="settings-row"><label for="volume">音效音量</label><input id="volume" type="range" min="0" max="100" value="${Math.round(sound.volume*200)}" aria-label="音效音量" style="accent-color:#64854f;width:145px"></div><p>進度會自動儲存在此瀏覽器。<br>提示：使用耳機，可以聽見每種守衛不同的攻擊聲。</p>`);$('#settings-sound').onclick=()=>{sound.toggle();updateSound();$('#settings-sound').textContent=sound.enabled?'已開啟':'已關閉'};$('#volume').oninput=e=>{sound.unlock();sound.volume=Number(e.target.value)/200;sound.play('click')}};
-if(game){document.querySelectorAll('[data-tower]').forEach(b=>b.onclick=()=>{sound.unlock();sound.play('click');if(game.finished){toast('關卡已結束，重新開始或挑戰另一座花園吧！');return}game.select(game.selectedType===b.dataset.tower?null:b.dataset.tower);if(innerWidth<900&&game.selectedType)$('#scene').scrollIntoView({behavior:'smooth',block:'center'})});document.querySelectorAll('[data-level]').forEach(b=>b.onclick=()=>{sound.unlock();if(Number(b.dataset.level)!==game.levelIndex)confirmReset(Number(b.dataset.level))});$('#start-wave').onclick=()=>{sound.unlock();game.startWave()};$('#pause').onclick=()=>game.togglePause();$('#paused-cover').onclick=()=>game.togglePause();$('#speed').onclick=()=>{game.toggleSpeed();sound.play('click')};$('#restart').onclick=()=>confirmReset(game.levelIndex);$('#view-3d').onclick=()=>game.setView('3d');$('#view-2d').onclick=()=>game.setView('2d');$('#reset-camera').onclick=()=>{game.camera.zoom=1;game.camera.updateProjectionMatrix();game.setView('3d')};$('#zoom-in').onclick=()=>game.zoom(.15);$('#zoom-out').onclick=()=>game.zoom(-.15)}
+if(game){document.querySelectorAll('[data-tower]').forEach(b=>b.onclick=()=>{sound.unlock();sound.play('click');if(game.finished){toast('關卡已結束，重新開始或挑戰另一座花園吧！');return}game.select(game.selectedType===b.dataset.tower?null:b.dataset.tower);if((innerWidth<=760||innerHeight<=520)&&game.selectedType)setBuildOpen(false)});document.querySelectorAll('[data-level]').forEach(b=>b.onclick=()=>{sound.unlock();closeChapters();if(Number(b.dataset.level)!==game.levelIndex)confirmReset(Number(b.dataset.level))});$('#start-wave').onclick=()=>{sound.unlock();game.startWave()};$('#pause').onclick=()=>game.togglePause();$('#paused-cover').onclick=()=>game.togglePause();$('#speed').onclick=()=>{game.toggleSpeed();sound.play('click')};$('#restart').onclick=()=>confirmReset(game.levelIndex);$('#view-3d').onclick=()=>game.setView('3d');$('#view-2d').onclick=()=>game.setView('2d');$('#reset-camera').onclick=()=>{game.camera.zoom=1;game.camera.updateProjectionMatrix();game.setView('3d')};$('#zoom-in').onclick=()=>game.zoom(.15);$('#zoom-out').onclick=()=>game.zoom(-.15)}
 overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal()});
-document.addEventListener('keydown',e=>{if(!overlay.hidden){if(e.code==='Escape')closeModal();if(e.code==='Tab'){const focusables=[...$('#modal').querySelectorAll('button:not(:disabled),input')];const first=focusables[0],last=focusables.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}return}if(!game||['INPUT','TEXTAREA'].includes(e.target.tagName)||e.repeat)return;if(e.code==='Space'){e.preventDefault();game.togglePause()}else if(e.code==='Enter'&&(!e.target.closest('button')||e.target.id==='start-wave')){e.preventDefault();sound.unlock();game.startWave()}else if(e.code==='Escape')game.select(null);else if(/^Digit[1-7]$/.test(e.code)&&!game.finished){sound.unlock();game.select(towerKeys[Number(e.code.at(-1))-1])}});
+document.addEventListener('keydown',e=>{if(chapterDrawer.open)return;if(!overlay.hidden){if(e.code==='Escape')closeModal();if(e.code==='Tab'){const focusables=[...$('#modal').querySelectorAll('button:not(:disabled),input')];const first=focusables[0],last=focusables.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}return}if(!game||['INPUT','TEXTAREA'].includes(e.target.tagName)||e.repeat)return;if(e.code==='Space'){e.preventDefault();game.togglePause()}else if(e.code==='Enter'&&(!e.target.closest('button')||e.target.id==='start-wave')){e.preventDefault();sound.unlock();game.startWave()}else if(e.code==='Escape'){game.select(null);setBuildOpen(false)}else if(/^Digit[1-7]$/.test(e.code)&&!game.finished){sound.unlock();game.select(towerKeys[Number(e.code.at(-1))-1])}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&game&&!game.paused&&!game.finished){game.paused=true;game.emit()}});
 // The development-only handle makes real browser simulations inspectable without affecting production.
 if(import.meta.env.DEV)window.__garden={game,sound,LEVELS,TOWERS};
+
+ // Keep the battlefield in the viewport; secondary screens live in a native modal drawer.
+const toolbar=document.createElement('header');
+toolbar.className='battle-toolbar';
+toolbar.innerHTML='<span class="battle-brand">萌芽守衛隊</span><nav class="battle-actions" aria-label="戰場選單"></nav>';
+$('.main').prepend(toolbar);
+const actions=toolbar.querySelector('nav');
+for(const id of ['nav-maps','nav-collection','nav-achievements','settings','sound','help']){
+ const button=$('#'+id);button.classList.remove('rail-button');actions.append(button);
+ if(['nav-collection','nav-achievements','sound'].includes(id))button.classList.add('secondary-action');
+}
+$('#nav-maps').insertAdjacentHTML('beforeend','<span>關卡</span>');
+actions.insertAdjacentHTML('beforeend','<button id="toggle-build" aria-expanded="true" aria-controls="build-panel">砲台 ▾</button><button id="fullscreen" aria-label="進入全螢幕" aria-pressed="false" title="全螢幕">⛶</button>');
+$('.sidebar').id='build-panel';
+function setBuildOpen(open){
+ $('.shell').classList.toggle('build-closed',!open);
+ $('#toggle-build').setAttribute('aria-expanded',String(open));
+ $('#toggle-build').textContent=open?'收起砲台 ▸':'砲台 ▾';
+ if(!open&&$('.sidebar').contains(document.activeElement))$('#toggle-build').focus({preventScroll:true});
+}
+$('#toggle-build').onclick=()=>setBuildOpen($('.shell').classList.contains('build-closed'));
+setBuildOpen(innerWidth>760&&innerHeight>520);
+const chapterDrawer=document.createElement('dialog');
+chapterDrawer.className='chapter-drawer';
+chapterDrawer.setAttribute('aria-labelledby','chapter-title');
+chapterDrawer.innerHTML='<div class="drawer-header"><h2 id="chapter-title">花園冒險</h2><button class="icon-btn" id="close-chapters" aria-label="關閉關卡選擇">×</button></div><p class="drawer-hint">通關解鎖下一章，已獲得的砲台可帶回舊章節。<br>選關時戰鬥會暫停；切換章節前會確認目前戰局。</p>';
+chapterDrawer.append($('#level-section'));
+const drawerLinks=document.createElement('div');drawerLinks.className='drawer-links';
+for(const [id,label] of [['nav-collection','守衛圖鑑'],['nav-achievements','冒險成就'],['settings','遊戲設定']]){const button=document.createElement('button');button.textContent=label;button.onclick=()=>$('#'+id).click();drawerLinks.append(button)}
+chapterDrawer.append(drawerLinks);
+document.querySelector('#app').append(chapterDrawer);
+let chapterWasPaused=false;
+function closeChapters(){
+ if(!chapterDrawer.open)return;
+ chapterDrawer.close();
+ if(game&&!game.finished){game.paused=chapterWasPaused;game.emit()}
+ $('#nav-maps').setAttribute('aria-expanded','false');
+}
+$('#nav-maps').setAttribute('aria-expanded','false');
+$('#nav-maps').onclick=()=>{
+ if(!game)return;
+ chapterWasPaused=game.paused;
+ game.paused=true;game.emit();
+ chapterDrawer.showModal();$('#nav-maps').setAttribute('aria-expanded','true');
+};
+$('#close-chapters').onclick=closeChapters;
+chapterDrawer.addEventListener('cancel',e=>{e.preventDefault();closeChapters()});
+chapterDrawer.addEventListener('click',e=>{if(e.target===chapterDrawer){const r=chapterDrawer.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeChapters()}});
+$('#fullscreen').onclick=async()=>{
+ try{
+  if(document.fullscreenElement)await document.exitFullscreen();
+  else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();
+  else toast('此瀏覽器不支援全螢幕切換，目前已使用滿版戰場。');
+ }catch{toast('瀏覽器未允許全螢幕，目前仍可使用滿版戰場。')}
+};
+document.addEventListener('fullscreenchange',()=>{
+ const active=!!document.fullscreenElement;
+ $('#fullscreen').setAttribute('aria-pressed',String(active));
+ $('#fullscreen').setAttribute('aria-label',active?'離開全螢幕':'進入全螢幕');
+ game?.resize();
+});
