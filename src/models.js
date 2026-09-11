@@ -10,7 +10,15 @@ export function towerModel(type,level=1){const root=new THREE.Group();const base
  cylinder(base,'#d6bb91',0,.07,0,.66,.72,.15);cylinder(base,'#edb589',0,.28,0,.52,.39,.42);cylinder(base,'#f5c79a',0,.49,0,.59,.59,.15);cylinder(base,'#65583d',0,.58,0,.49,.49,.07);
  for(let i=0;i<7;i++)leaf(base,Math.sin(i)*.33,.63,Math.cos(i)*.33,i,.9);
  const head=new THREE.Group();root.add(head);root.userData.head=head;
- if(type==='pea'){
+ if(type==='super'){
+ const metal='#665532',gold='#f4bd3f',glow='#fff1a1';
+ cylinder(base,metal,0,.48,0,1.08,1.22,.38,32);cylinder(base,gold,0,.72,0,.88,1.02,.22,32);
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;const fin=mesh(new THREE.BoxGeometry(.18,.5,.58),i%2?gold:'#e88935',base,Math.sin(a)*.88,.45,Math.cos(a)*.88);fin.rotation.y=a}
+ cylinder(head,'#7d6837',0,1.2,0,.45,.62,1.05,20);ball(head,gold,0,1.92,0,.92,.78,.86);ball(head,glow,0,2.12,-.12,.58,.48,.55);
+ for(const side of [-1,1]){const barrel=cylinder(head,side<0?'#d87e32':gold,side*.34,1.88,.85,.3,.42,1.35,24);barrel.rotation.x=Math.PI/2;const rim=mesh(new THREE.TorusGeometry(.31,.105,12,28),glow,head,side*.34,1.88,1.52);ball(head,'#4b3c26',side*.34,1.88,1.535,.235,.235,.025)}
+ eyes(head,2.18,.7,.35,.09);for(let i=0;i<6;i++){const a=i*Math.PI/3;const ray=mesh(new THREE.OctahedronGeometry(.22),glow,head,Math.sin(a)*.8,2.72,Math.cos(a)*.6);ray.scale.set(.65,1.8,.65)}
+ const halo=mesh(new THREE.TorusGeometry(1.08,.065,10,48),glow,head,0,2.25,0);halo.rotation.x=Math.PI/2;root.userData.halo=halo;root.scale.setScalar(1.55);
+ }else if(type==='pea'){
  cylinder(head,'#6c9b48',0,.87,0,.11,.13,.66);leaf(head,.23,.86,0,1.2,1.1);leaf(head,-.21,.94,0,-1.3,.9);
  ball(head,'#97bb61',0,1.48,0,.54,.5,.52);ball(head,'#a8c976',-.12,1.67,-.14,.29,.21,.3);
  const barrel=cylinder(head,'#91b85c',0,1.43,.49,.26,.3,.46);barrel.rotation.x=Math.PI/2;
